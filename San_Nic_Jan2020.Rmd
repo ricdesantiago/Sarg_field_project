@@ -1,0 +1,1647 @@
+---
+title: "San Nic Jan 2020"
+author: "Jan Walker"
+date: "9/11/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+#Load
+
+These are the common packages I always load.
+
+```{r Packages}
+
+library(nlme)
+library(ggplot2)
+library(car)
+library(plotrix)
+library(ez)
+library(vegan)
+library(cowplot)
+library(gridExtra)
+library(HH)
+library(lme4)
+
+#Gams
+
+library(mgcv)
+
+library(viridis)
+#install.packages("dplyr")
+
+#detach(package:dplyr )
+library(dplyr)
+#install.packages("tidyr")
+#detach(package:tidyr)
+library(tidyr)
+library(mvtnorm)
+library(statmod)
+
+library(MASS)
+
+#install.packages("lmerTest")
+library(fitdistrplus)
+library(lmerTest)
+
+#install.packages("pander")
+library(pander)
+library(magrittr)
+
+#install.packages("metafor") - for LRR
+library(metafor) 
+
+#PCA
+library(car)
+#install.packages(c("corrplot","psych", "caret"))
+library(psych)
+library(corrplot)
+library(caret)
+#install.packages("bootstrap")
+library(bootstrap)
+
+#install.packages("npmv")
+library(npmv)
+#install.packages("ggfortify")
+library(ggfortify)
+#install.packages("ggrepel")
+library(factoextra)
+library(ggrepel) #https://cran.mtu.edu/web/packages/ggrepel/vignettes/ggrepel.html
+
+#library ggfortify https://terrytangyuan.github.io/2018/02/12/autoplotly-intro/ 
+
+
+```
+
+```{r Clear}
+
+#To clear the environment
+
+ls()
+rm(list=ls()) 
+
+```
+
+```{r Colors}
+
+#These are the colors we'll use throughout. This is no run-able code, but more of a place-holder and a reminder.
+
+#I also like to use color-blind friendly palettes
+
+#http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
+
+#Teg = Grey  
+"#999999"
+
+#Herm = Blue 
+"#56B4E9"
+
+#Ab = Black
+"#000000"
+
+#Ab/Urchin= Green
+"#009E73"
+
+```
+
+
+All of the below surveys are from San Nic in January 2020
+
+#Wrack Surveys
+
+These were the wrack focused surveys, mainly taken by Jan, during the January trip to San Nic in 2020.
+
+
+
+```{r Data}
+
+ setwd("~/Desktop/R Data/SNI JAN 2020 Data")
+Wrack_Survey_Data <- read.csv("WrackFocusedSurveySNIJan2020.csv")
+
+```
+
+##Composition
+
+```{r Plots}
+
+#create a dataframe with just important columns
+
+Wrack_Survey_Data_reduced <- na.omit(Wrack_Survey_Data[, -c(1:4, 6, 8, 13)])
+
+# Change data from wide to long format for  analyses
+Wrack_Survey_Data_long <- gather(data = Wrack_Survey_Data_reduced, 
+                                 key = "Species", value = "Abundance", ... 
+                                 =  c(teg, herm, ab), factor_key = TRUE)
+# Key is the new name for the category, value is the new name for the response (in this case Abundance), … = c() is a list of all the species you want to aggregate, factor_key = true makes Species a factor.
+
+##### Abundance Plots
+
+#rename habitats
+levels(Wrack_Survey_Data_long$habitat)
+levels(Wrack_Survey_Data_long$habitat) <- c("Abalone", "Tegula/Hermit") 
+
+#rename species
+levels(Wrack_Survey_Data_long$Species)
+levels(Wrack_Survey_Data_long$Species) <- c("Tegula", "Hermit", "Abalone") 
+
+###Stacked Bar Plot
+
+ pdf(file = "Stackbarplot_wracksurvey_Jan2020SanNic.pdf", width= 6, height = 8, useDingbats=F)
+
+ggplot(Wrack_Survey_Data_long, 
+       aes(x=habitat, y=Abundance, fill = Species)) + 
+  geom_bar(stat = "identity", position = "fill") + 
+  ylab("Proportional Abundance") + 
+  xlab("Habitat") + 
+  scale_fill_manual(values=c("#999999", "#56B4E9",
+                                "#000000")) +
+  theme(axis.title.x = element_text(face="bold", size=22),
+        axis.text.x  = element_text(size=20)) +
+  theme(axis.title.y = element_text(angle=90, face="bold", 
+                                    size=22, 
+                                    vjust=1.2),
+        axis.text.y  = element_text(size=20)) 
+  
+dev.off()
+
+######Barplot
+
+meanAbundance <- Wrack_Survey_Data_long %>% 
+  group_by(habitat, Species) %>% 
+  summarize(mean_Abundance = mean(Abundance), SE = std.error(Abundance))
+
+pdf(file = "Barplot_wracksurvey_Jan2020SanNic.pdf", width = 6, height = 7, useDingbats=F)
+
+Plot_Abundance_Bar <- ggplot(data=meanAbundance,
+                      aes(y=mean_Abundance, 
+                          x=habitat, 
+                          fill = Species)) +
+  geom_bar(stat = "identity", colour = "black", 
+           position = position_dodge(width = 0.9))
+
+Plot_Abundance_Bar + theme(axis.title.x = element_text(face="bold",
+                                                 size=22),
+                           axis.text.x  = element_text(size=20)) + 
+  xlab("Habitat") +
+  theme(axis.title.y = element_blank()) + 
+  ylab("Abundance (# on wrack)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                    size=22, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  geom_errorbar(aes(ymin=mean_Abundance - SE, 
+                    ymax=mean_Abundance + SE), width = 0.05,
+                position=position_dodge(width = 0.9)) +
+  scale_fill_manual(values = c("#999999", "#56B4E9", "#000000")) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.88,.88)) 
+
+dev.off()
+
+
+```
+
+##Richness
+
+```{r Plot}
+
+#We can ask - Does habitat and wrack_length predict species richness?
+
+# create a dataframe with just species data
+spe_data <- sqrt(Wrack_Survey_Data_reduced[,-c(1:3)])
+# create a dataframe with just factor data
+trt_data <- Wrack_Survey_Data_reduced[,c(1:3)]
+
+richness <- specnumber(spe_data)
+
+#make new richness dataframe
+richness.scores <- as.data.frame(richness)
+richness.scores$habitat <- trt_data$habitat
+richness.scores$wrack_num <- trt_data$wrack_num
+richness.scores$wrack_length <- trt_data$wrack_length
+
+#rename Habitats
+levels(richness.scores$habitat)
+levels(richness.scores$habitat) <- c("Abalone", "Tegula/Hermit") 
+
+pdf(file = "Richness_wracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_richness <- ggplot(data=richness.scores,
+                 aes(x=wrack_length, y=richness, 
+                     colour = habitat)) +
+  scale_colour_manual(name = "Habitat",
+                      values=c("#000000", "#56B4E9")) +
+  geom_point(size=2) 
+
+Plot_richness + theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) +
+  ylab("Species Richness") +
+ xlab("Wrack length (m)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=22, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=20)) +
+  theme(legend.position="right") +
+  #scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                   #  breaks = pretty(c(0,200), n = 5), 
+                   #  limits = c(0,200)) +
+  #scale_x_continuous(expand = expand_scale(mult = c(0, 0)),
+                    # breaks = pretty(c(0,51), n = 5), 
+                    # limits = c(0, 51)) +
+  geom_smooth(method = lm)
+
+
+dev.off()
+
+```
+
+```{r Model}
+
+#We can ask - Does habitat and wrack_length predict species richness?
+
+#test ANCOVA aassumption
+model_richness<- lm(richness ~ wrack_length, 
+                           data = richness.scores)
+summary(model_richness)
+anova(model_richness) #Richness and wrack-length are significant, which means wrack_length influences richness and does not meet assumptions of ANCOVA
+
+#proceed with caution
+
+#check normality assumptions
+qqnorm(richness.scores$richness)
+shapiro.test(richness.scores$richness) #non-normal
+hist(richness.scores$richness)
+leveneTest(richness ~ habitat, data = richness.scores) #not-equal
+
+#Look at density plots to decide which models to test
+hist <- ggplot(data=richness.scores,
+                      aes(x=richness)) +
+  #geom_histogram() +
+  geom_density() +
+  facet_grid(~habitat)
+hist
+
+model_richness_wrack <- glm(richness ~ wrack_length * habitat,
+                       family=gaussian,
+                       data=richness.scores)
+summary(model_richness_wrack) 
+
+car::Anova(model_richness_wrack) #use to pull our main effects
+
+
+```
+
+
+## Abundance
+
+```{r line plot}
+
+#We can ask does wrack length and habitat predict species abundance?
+
+#use the long format data frame
+
+#Sort by species
+Wrack_Survey_Data_Ab <- Wrack_Survey_Data_long %>% 
+  filter(Species == "Abalone") #remember you renamed levels in Plot section, so run again if this calls an error
+
+Wrack_Survey_Data_Teg <- Wrack_Survey_Data_long %>% 
+  filter(Species == "Tegula")
+
+Wrack_Survey_Data_Herm <- Wrack_Survey_Data_long %>% 
+  filter(Species == "Hermit")
+
+#Subsitite each species to create 3 graphs
+#check names of each one, stay consistent in case changes are made
+#Ab = Abundance_Abalone_wracksurvey_Jan2020SanNic
+#Teg = Abundance_Tegula_wracksurvey_Jan2020SanNic
+#Herm = Abundance_Hermit_wracksurvey_Jan2020SanNic
+
+pdf(file = "Abundance_Hermit_wracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Her <- ggplot(data=Wrack_Survey_Data_Herm,
+                 aes(x=wrack_length, y=Abundance, 
+                     colour = habitat)) +
+  scale_colour_manual(name = "Habitat",
+                      values=c("#000000", "#56B4E9")) +
+  geom_point(size=2) 
+
+Plot_Her + theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) +
+  ylab("Hermit abundance") +
+ xlab("Wrack length (m)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=22, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=20)) +
+  theme(legend.position="right") +
+  geom_smooth(method = lm)
+
+
+dev.off()
+
+```
+
+
+```{r Model}
+
+#For now - we are going to assume normality, but be conservative and use GLM. We need more data points before we pick a distribution and a model.
+
+#Abalone
+
+model_abundance_ab <- glm(Abundance ~ wrack_length * habitat,
+                       family=gaussian,
+                       data=Wrack_Survey_Data_Ab)
+summary(model_abundance_ab) 
+car::Anova(model_abundance_ab)
+
+#Tegula
+
+model_abundance_teg <- glm(Abundance ~ wrack_length * habitat,
+                       family=gaussian,
+                       data=Wrack_Survey_Data_Teg)
+summary(model_abundance_teg) 
+car::Anova(model_abundance_teg)
+
+#Hermit
+
+model_abundance_her <- glm(Abundance ~ wrack_length * habitat,
+                       family=gaussian,
+                       data=Wrack_Survey_Data_Herm)
+summary(model_abundance_her) 
+car::Anova(model_abundance_her)
+
+
+
+```
+
+
+```{r Boxplot}
+
+pdf(file = "Habitat_v_wracklength_wracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box <- ggplot(data=Wrack_Survey_Data_long,
+                      aes(y=wrack_length, x=habitat, fill = habitat)) +
+  geom_boxplot() 
+
+Plot_Box + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Habitat") +
+  ylab("Wrack length (m)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(values = c("#000000", "#56B4E9")) +
+  theme(legend.title=element_blank()) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.15,.88)) 
+
+dev.off()
+
+```
+
+#Abalone Surveys
+
+```{r Data}
+
+Abalone_Survey_Data <- read.csv("./Data/AbFocusedWrackSurveySNIJan2020.csv")
+
+```
+
+## On/Off
+
+```{r Plot}
+
+#create a dataframe with just important columns
+
+Abalone_Survey_Data_reduced <- na.omit(Abalone_Survey_Data[, -c(1:5, 7)])
+
+#Change to long format
+
+Abalone_Survey_Data_long <- gather(data = Abalone_Survey_Data_reduced, 
+                                 key = "Wrack.Use", value = "Abundance", ... 
+                                 =  c(on_wrack, off_wrack), factor_key = TRUE)
+
+#rename habitats
+levels(Abalone_Survey_Data_long$habitat)
+levels(Abalone_Survey_Data_long$habitat) <- c("Abalone", "Abalone/Urchin") 
+
+#Barplot
+
+meanAbundance_ab <- Abalone_Survey_Data_long %>% 
+  group_by(habitat, Wrack.Use) %>% 
+  summarize(mean_Abundance = mean(Abundance), SE = std.error(Abundance))
+
+levels(meanAbundance_ab$Wrack.Use)
+levels(meanAbundance_ab$Wrack.Use) <- c("On", "Off") 
+
+
+pdf(file = "On.off_abalonesurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Bar <- ggplot(data=meanAbundance_ab,
+                      aes(y=mean_Abundance, 
+                          x=habitat, 
+                          fill = Wrack.Use)) +
+  geom_bar(stat = "identity", colour = "black", 
+           position = position_dodge(width = 0.9))
+
+Plot_Bar + theme(axis.title.x = element_text(face="bold",
+                                                 size=22),
+                           axis.text.x  = element_text(size=20)) + 
+  xlab("Habitat") +
+  theme(axis.title.y = element_blank()) + 
+  ylab("Count (out of 10)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                    size=22, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  geom_errorbar(aes(ymin=mean_Abundance - SE, 
+                    ymax=mean_Abundance + SE), width = 0.05,
+                position=position_dodge(width = 0.9)) +
+  scale_fill_manual(name = "Wrack usage",
+                    values = c("#999999", "#009E73")) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.18,.88)) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                     breaks = pretty(c(0,10), n = 5), 
+                     limits = c(0,10))
+
+dev.off()
+
+```
+
+```{r Model}
+
+#For now - we are going to assume normality, but be conservative and use GLM. We need more data points before we pick a distribution and a model.
+
+#check normality assumptions
+qqnorm(Abalone_Survey_Data_long$Abundance)
+shapiro.test(Abalone_Survey_Data_long$Abundance) #non-normal
+hist(Abalone_Survey_Data_long$Abundance)
+leveneTest(Abundance ~ habitat, data = Abalone_Survey_Data_long) #equal
+leveneTest(Abundance ~ Wrack.Use, data = Abalone_Survey_Data_long) #equal
+
+#Look at density plots to decide which models to test
+hist <- ggplot(data=Abalone_Survey_Data_long,
+                      aes(x=Abundance)) +
+  #geom_histogram() +
+  geom_density() +
+  facet_grid(Wrack.Use~habitat)
+hist
+
+model_on.off <- glm(Abundance ~ Wrack.Use * habitat,
+                       family=gaussian,
+                       data=Abalone_Survey_Data_long)
+summary(model_on.off) 
+car::Anova(model_on.off)
+
+```
+
+#Grazer on/off
+
+These transects were perpendicular to the water line. Therefore, they crossed many different habitats.
+
+```{r Data}
+
+Grazer_Survey_Data <- read.csv("./Data/GrzrOnOffSurveySNIJan2020.csv") 
+# note this file has been edited and re-uploaded to Google drive, use the file that is most up to date
+#edits were made to do repetitive data
+
+#we want to remove any row that has double 0's, so a 0 for on and a 0 for off, this is because not every recorder recorded 0's when animals weren't seen. Therefore, by keeping double 0's in, we're inflating the likely hood of not finidng an animal
+
+Grazer_Survey_Data_edited <- Grazer_Survey_Data %>% 
+  mutate(Grazer_sum = on_wrack + off_wrack) %>% 
+  filter(Grazer_sum != 0)
+#this removed 13 observations
+
+```
+
+##On/Off
+
+```{r Plot}
+
+#create a dataframe with just important columns
+
+Grazer_Survey_Data_reduced <- na.omit(Grazer_Survey_Data_edited[, -c(1:3, 5, 7)])
+
+#Change to long format
+
+Grazer_Survey_Data_long <- gather(data = Grazer_Survey_Data_reduced, 
+                                 key = "Wrack.Use", value = "Abundance", ... 
+                                 =  c(on_wrack, off_wrack), factor_key = TRUE)
+
+#Barplot
+
+meanAbundance_grazer <- Grazer_Survey_Data_long %>% 
+  group_by(grzr_sp, Wrack.Use) %>% 
+  summarize(mean_Abundance = mean(Abundance), SE = std.error(Abundance))
+
+levels(meanAbundance_grazer$Wrack.Use)
+levels(meanAbundance_grazer$Wrack.Use) <- c("On", "Off") 
+
+
+pdf(file = "On.off_grazersurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Bar_g <- ggplot(data=meanAbundance_grazer,
+                      aes(y=mean_Abundance, 
+                          x=grzr_sp, 
+                          fill = Wrack.Use)) +
+  geom_bar(stat = "identity", colour = "black", 
+           position = position_dodge(width = 0.9))
+
+Plot_Bar_g + theme(axis.title.x = element_text(face="bold",
+                                                 size=22),
+                           axis.text.x  = element_text(size=20)) + 
+  xlab("Grazer") +
+  theme(axis.title.y = element_blank()) + 
+  ylab("Count (max 20)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                    size=22, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  geom_errorbar(aes(ymin=mean_Abundance - SE, 
+                    ymax=mean_Abundance + SE), width = 0.05,
+                position=position_dodge(width = 0.9)) +
+  scale_fill_manual(name = "Wrack usage",
+                    values = c("#999999", "#009E73")) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.18,.88)) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                     breaks = pretty(c(0,20), n = 5), 
+                     limits = c(0,20))
+
+dev.off()
+
+#let's extract the sample sizes for each of the grazers bc we didn't see grazers everytime
+
+Grazer_Survey_Data_reduced %>% 
+  count(grzr_sp)
+
+
+```
+
+
+## Water distance
+
+The tran_point_m represents the transect tape and roughly the distance from the water. 0m marks the furthest from the water (so we have to think of it in reverse)
+
+We will look out grazer abundance x distance from water as a regression
+
+```{r plot all}
+
+levels(Grazer_Survey_Data_long$Wrack.Use)
+levels(Grazer_Survey_Data_long$Wrack.Use) <- c("On", "Off") 
+
+levels(Grazer_Survey_Data_long$grzr_sp)
+levels(Grazer_Survey_Data_long$grzr_sp) <- c("Abalone", "Hermit", "Tegula", "Urchin") 
+
+pdf(file = "Abundance_Distance_grazersurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_W <- ggplot(data=Grazer_Survey_Data_long,
+                 aes(x=tran_point_m, y=Abundance, 
+                     colour = grzr_sp)) +
+  scale_colour_manual(name = "Grazer",
+                    values = c("#000000", "#56B4E9", "#999999", "#009E73")) +
+  geom_point(size=2, aes(shape = Wrack.Use)) 
+
+
+Plot_W + theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) +
+  ylab("Count (max 20)") +
+ xlab("Transect (m)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=22, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=20)) +
+  theme(legend.position="right") +
+  geom_smooth(method = lm)
+  
+
+
+dev.off()
+
+
+
+```
+
+```{r Model}
+
+#We'll ignore wrack usage and first ask - does grazer abundance change with distance from waves?
+
+#For now - we are going to assume normality, but be conservative and use GLM. We need more data points before we pick a distribution and a model.
+
+#Visualize
+qqnorm(Grazer_Survey_Data_long$Abundance)
+#the distribution of this data appear logistic - where we really have either 0 or 20
+
+#Look at density plots to decide which models to test
+hist <- ggplot(data=Grazer_Survey_Data_long,
+                      aes(x=Abundance)) +
+  #geom_histogram() +
+  geom_density() +
+  facet_grid(~grzr_sp)
+hist
+
+model_grzer <- glm(Abundance ~ grzr_sp * tran_point_m,
+                       family=binomial(),
+                       data=Grazer_Survey_Data_long)
+summary(model_on.off) 
+car::Anova(model_on.off)
+
+```
+
+```{r Plot Prop}
+
+#now we'll look at the proportion of on wrack to off wrack
+
+Grazer_Survey_Data_prop <- Grazer_Survey_Data_reduced %>% 
+  mutate(prop.on = on_wrack/off_wrack)
+
+levels(Grazer_Survey_Data_prop$grzr_sp)
+levels(Grazer_Survey_Data_prop$grzr_sp) <- c("Abalone", "Hermit", "Tegula", "Urchin") 
+
+pdf(file = "Abundance_Distance_on_grazersurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_W <- ggplot(data=Grazer_Survey_Data_prop,
+                 aes(x=tran_point_m, y=prop.on, 
+                     colour = grzr_sp)) +
+  scale_colour_manual(name = "Grazer",
+                    values = c("#000000", "#56B4E9", "#999999", "#009E73")) +
+  geom_point(size=2) 
+
+
+Plot_W + theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) +
+  ylab("Proportion on wrack") +
+ xlab("Transect (m)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=22, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=20)) +
+  theme(legend.position="right") +
+  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                     breaks = pretty(c(0,2), n = 5), 
+                     limits = c(0,2))
+  
+
+
+dev.off()
+
+
+
+
+
+```
+
+
+
+# Invasive Wrack
+
+This the invasive wrack survey, where we surveyed wrack patties for sargassum
+
+```{r Data}
+
+Invasive_Survey_Data <- read.csv("./Data/InvasiveWrackSurveySNIJan2020.csv") 
+
+```
+
+```{r Size}
+
+#Let's first look at the size of wrack patties that is invasive for each site
+
+levels(Invasive_Survey_Data$site)
+levels(Invasive_Survey_Data$site) <- c("Cosign", "West Marker Poles") 
+
+pdf(file = "Wracksize_invasviewracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box <- ggplot(data=Invasive_Survey_Data,
+                      aes(y=ellipse_A_m2, x=site, fill = site)) +
+  geom_boxplot() 
+
+Plot_Box + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Site") +
+  ylab("Wrack area (m2)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(values = c("#999999", "#009E73")) +
+    theme(legend.position="none")
+
+dev.off()
+
+t.test(ellipse_A_m2 ~ site, data = Invasive_Survey_Data)
+
+
+
+```
+
+```{r Percent}
+
+#Now we'll ask - what percent of patties have invasive sargassum?
+
+#we're going to use a pie chart *GROSS* but i can't think of another way to visualize this
+
+#first we have to find the total no's and total yes's
+
+Pie_data <- Invasive_Survey_Data %>% 
+  group_by(site) %>% 
+  count(invasive)
+
+levels(Pie_data$invasive)
+levels(Pie_data$invasive) <- c("absent", "present") 
+
+
+#Make a piechart for each site
+
+Pie_data_Cosign <- Pie_data %>% 
+  filter(site == "Cosign")
+
+Pie_data_WMP <- Pie_data %>% 
+  filter(site == "West Marker Poles")
+
+pdf(file = "piechart_cosign_invasviewracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+ggplot(Pie_data_Cosign, aes(x="", y=n, fill=invasive)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() +
+  scale_fill_manual(name = "Invasive",
+                    values = c("#333333", "#999999"))
+
+dev.off()
+
+pdf(file = "piechart_wmp_invasviewracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+ggplot(Pie_data_WMP, aes(x="", y=n, fill=invasive)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() +
+  scale_fill_manual(name = "Invasive",
+                    values = c("#333333", "#009E73"))
+
+dev.off()
+
+
+```
+
+
+```{r Invasive}
+
+#We'll ask - Of the patties that have invasive wrack, what percent is invasive?
+
+#we'll remove patties with 0 invasvie wrack
+
+Patty_invasive <- Invasive_Survey_Data %>% 
+  filter(percent > 0)
+
+
+pdf(file = "Proportion_invasviewracksurvey_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box_2 <- ggplot(data=Patty_invasive,
+                      aes(y=percent, x=site, fill = site)) +
+  geom_boxplot() 
+
+Plot_Box_2 + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Site") +
+  ylab("Percent invasive (%) ") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(values = c("#999999", "#009E73")) +
+  theme(legend.position="none")
+
+dev.off()
+
+t.test(percent ~ site, data = Patty_invasive)
+
+
+
+```
+
+# Consumption Experiment
+
+```{r Data} 
+
+Experiment_Data <- read.csv("./Data/SNICosignJan2020.csv") 
+
+```
+
+
+## Exp. 1
+
+```{r Data}
+
+#we'll clean up the file for just experiment 1 and add 2 new columns that we'll use later
+
+Experiment_1_Data <- Experiment_Data %>% 
+  filter(experiment == "1A" | experiment == "1B") %>% 
+  filter(treatment != "ABX") %>% #remove abalone exclusion
+  filter(!is.na(Wf)) %>% #remove NAs from Wf
+  mutate(consumption = Wf/Time) %>% #I made a new column called time in excel prior to calling the file into R, this gives us g/day
+  mutate(Total_animals = X0.5m_herm + X0.5m_teg + X0.5m_ab + 
+           X0.5m_ur + X0.5m_pac + X0.5m_chi + X0.5m_lim) %>% 
+  mutate(On_plate = herm_on_plate + teg_on_plate + ab_on_plate)
+
+```
+
+```{r Plot}
+
+# First we'll visualize the data using a bar plot - Do grazers prefer sargassum or macro?
+
+levels(Experiment_1_Data$algae_spp.)
+levels(Experiment_1_Data$algae_spp.) <- c("Macrocystis", "Sargassum") 
+
+#Barplot
+
+meanconsumption_data <- Experiment_1_Data %>% 
+  group_by(algae_spp.) %>% 
+  summarize(mean_consumption = mean(consumption), SE = std.error(consumption))
+
+
+pdf(file = "Exp1_bar_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Bar <- ggplot(data=meanconsumption_data,
+                      aes(y=mean_consumption, 
+                          x=algae_spp., 
+                          fill = algae_spp.)) +
+  geom_bar(stat = "identity", colour = "black", 
+           position = position_dodge(width = 0.9))
+
+Plot_Bar + theme(axis.title.x = element_text(face="bold",
+                                                 size=22),
+                           axis.text.x  = element_text(size=20)) + 
+  xlab("Algae species") +
+  theme(axis.title.y = element_blank()) + 
+  ylab("Consumption (g/day)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                    size=22, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  geom_errorbar(aes(ymin=mean_consumption - SE, 
+                    ymax=mean_consumption + SE), width = 0.05,
+                position=position_dodge(width = 0.9)) +
+  scale_fill_manual(name = "Algae species",
+                    values = c("#CC9966", "#FF9999")) +
+  theme(legend.position="none")
+
+dev.off()
+
+#boxplot
+
+pdf(file = "Exp1_box_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box <- ggplot(data=Experiment_1_Data,
+                      aes(y=consumption, x=algae_spp., fill = algae_spp.)) +
+  geom_boxplot() 
+
+Plot_Box + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Algae Species") +
+  ylab("Consumption (g/day)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(name = "Algae species",
+                    values = c("#CC9966", "#FF9999")) +
+  theme(legend.position="none")
+
+dev.off()
+
+
+```
+
+```{r LMEM}
+
+#http://bbolker.github.io/mixedmodels-misc/glmmFAQ.html#model-specification
+
+#We're going to fun Linear Mixed Effect Models because we want to make block a random factor - there could be variation in block that is driving the patterns in consumption
+
+#package - lme4
+#use lmer for gaussian - normal distributions
+#use glmr for other distributions
+
+#in this case we want to make Block a random effect
+
+######test distributions
+
+#normal
+qqnorm(Experiment_1_Data$consumption)
+shapiro.test(Experiment_1_Data$consumption) #non-normal 
+hist(Experiment_1_Data$consumption)
+leveneTest(consumption ~ algae_spp., data = Experiment_1_Data) #nequal
+
+#Look at density plots to decide which models to test
+ggplot(data=Experiment_1_Data, aes(x=consumption)) +
+  #geom_histogram() +
+  geom_density() +
+  facet_grid( ~ algae_spp.) #very not-normal
+
+#proceed with caustion
+
+Exp1_model <- lmer(consumption ~ algae_spp.
+                       + (1 | block),
+                data = Experiment_1_Data)
+
+car::Anova(Exp1_model)
+
+post.hoc.Exp1 <-glht(Exp1_model, linfct = mcp(algae_spp. = "Tukey"))
+cld(post.hoc.Exp1)
+
+```
+
+```{r Animal}
+
+#we're going to see if the total number of animals explains consumption
+
+#first, we'll add a new column which will be the proportion of M:S consumed
+
+#we have to go from the long format to the wide format
+
+Experiment_1_Data_reduced <- na.omit(Experiment_1_Data[, -c(1:2, 4:6, 8:27, 31)])
+  
+Experiment_1_Data_wide <- spread(Experiment_1_Data_reduced, algae_spp., consumption)
+Experiment_1_Data_wide
+
+Experiment_1_Data_wide <- Experiment_1_Data_wide %>% 
+  mutate(prop.consump = Macrocystis/Sargassum)
+
+
+pdf(file = "Exp1_Animal_v_consumption_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_prop <- ggplot(data=Experiment_1_Data_wide,
+                 aes(x=Total_animals, y=prop.consump)) +
+  geom_point(size=2) 
+
+Plot_prop + theme(axis.title.x = element_text(face="bold", size=12),
+               axis.text.x  = element_text(size=10)) +
+  ylab("Macrocystis to Sargassum consumption") +
+ xlab("Total animals counted") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=12, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=10)) +
+  theme(legend.position="right") +
+  geom_smooth(method = lm)
+
+
+dev.off()
+
+Animal.model <- lm(prop.consump ~ Total_animals, data = Experiment_1_Data_wide)
+summary(Animal.model)
+
+
+```
+
+```{r Spe. Dis.}
+
+#now let's see what species make up this habitat - i.e. what are the grazers that could be eating our plates
+
+#we need to take the observations and turn them into long format
+
+Experiment_1_Data_long <- gather(data = Experiment_1_Data, 
+                                 key = "Species.sighted", 
+                            value = "Abundance.sighted", ... 
+                                 =  c(X0.5m_herm,
+                                      X0.5m_teg,
+                                      X0.5m_ab,
+                                      X0.5m_ur,
+                                      X0.5m_pac,
+                                      X0.5m_chi,
+                                      X0.5m_lim), factor_key = TRUE)
+
+levels(Experiment_1_Data_long$Species.sighted)
+levels(Experiment_1_Data_long$Species.sighted) <- c("Hermit", "Tegula", "Abalone", "Urchin", "Pachygrapsus", "Chiton", "Limpet") 
+
+
+pdf(file = "Exp1_box_animalspec_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box_1 <- ggplot(data=Experiment_1_Data_long,
+                      aes(y=Abundance.sighted, x=Species.sighted, 
+                          fill = Species.sighted)) +
+  geom_boxplot() 
+
+Plot_Box_1 + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20, angle = 45, hjust = 1)) + 
+  xlab("Animal") +
+  ylab("# counted") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  scale_fill_manual(name = "Animals",
+                     values = c("#56B4E9", #Hermit
+                                "#999999", #Tegula
+                                "#000000", #Abalone
+                                "#009E73", #Urchin
+                                "#0072B2", #Pachy
+                                "#D55E00", #Chiton
+                                "#CC79A7")) +
+  theme(legend.position="none")
+
+dev.off()
+
+
+
+```
+
+
+## Exp. 2
+
+```{r Data}
+
+#we'll clean up the file for just experiment 2 and add 2 new columns that we'll use later
+
+Experiment_2_Data <- Experiment_Data %>% 
+  filter(experiment == "2A" | experiment == "2B") %>% 
+  filter(!is.na(Wf)) %>% #remove NAs from Wf
+  mutate(consumption = Wf/Time) %>% #I made a new column called time in excel prior to calling the file into R, this gives us g/day
+  mutate(Total_animals = X0.5m_herm + X0.5m_teg + X0.5m_ab + 
+           X0.5m_ur + X0.5m_pac + X0.5m_chi + X0.5m_lim)
+
+#let's get sample for each habitat
+
+Experiment_2_Data_n <- Experiment_2_Data %>% 
+  count(trt)
+
+```
+
+```{r Plot}
+
+levels(Experiment_2_Data$algae_spp.)
+levels(Experiment_2_Data$algae_spp.) <- c("Macrocystis", "Sargassum") 
+
+levels(Experiment_2_Data$trt)
+levels(Experiment_2_Data$trt) <- c("Abalone", "Abalone", "Ab/Urch", "Hermit", "Teg/Hermit") 
+Experiment_2_Data$trt <- factor(Experiment_2_Data$trt, levels = c("Ab/Urch", "Abalone", "Hermit", "Teg/Hermit"))
+
+#negative consumption typically isn't real, so we'll change negatives to 0
+
+Experiment_2_Data$consumption[Experiment_2_Data$consumption <0] <- 0
+
+#boxplot
+
+pdf(file = "Exp2_box_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box <- ggplot(data=Experiment_2_Data,
+                      aes(y=consumption, x=trt, fill = algae_spp.)) +
+  geom_boxplot() 
+
+Plot_Box + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Habitat") +
+  ylab("Consumption (g/day)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(name = "Algae species",
+                    values = c("#CC9966", "#FF9999")) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.88,.88)) +
+  scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                     breaks = pretty(c(0,25), n = 5), 
+                     limits = c(0,25))
+
+dev.off()
+
+
+```
+
+```{r LMEM}
+
+Exp2_model <- lmer(consumption ~ algae_spp. * trt
+                       + (1 | block),
+                data = Experiment_2_Data)
+
+car::Anova(Exp2_model)
+
+post.hoc.Exp2 <-glht(Exp2_model, linfct = mcp(algae_spp. = "Tukey"))
+cld(post.hoc.Exp2)
+
+
+```
+
+```{r Animal}
+
+#we're going to see if the total number of animals explains consumption
+
+#first, we'll add a new column which will be the proportion of M:S consumed
+
+#we have to go from the long format to the wide format
+
+Experiment_2_Data_reduced <- na.omit(Experiment_2_Data[, -c(1:2, 5:6, 8:27)])
+  
+Experiment_2_Data_wide <- spread(Experiment_2_Data_reduced, algae_spp., consumption)
+Experiment_2_Data_wide
+
+Experiment_2_Data_wide <- Experiment_2_Data_wide %>% 
+  mutate(prop.consump = Macrocystis/Sargassum)
+
+#there are 4 outliers, greater than 2000 So we're going to remove them 
+
+Experiment_2_Data_wide_removed <- Experiment_2_Data_wide %>% 
+  filter(prop.consump < 25)
+
+
+pdf(file = "Exp2_Animal_v_consumption_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_prop <- ggplot(data=Experiment_2_Data_wide_removed,
+                 aes(x=Total_animals, y=prop.consump,
+                     colour = trt)) +
+  scale_colour_manual(name = "Habitat",
+                      values=c("#009E73", "#000000", "#56B4E9", "#999999")) +
+  geom_point(size=2) 
+
+Plot_prop + theme(axis.title.x = element_text(face="bold", size=12),
+               axis.text.x  = element_text(size=10)) +
+  ylab("Macrocystis to Sargassum consumption") +
+ xlab("Total animals counted") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=12, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=10)) +
+  theme(legend.position="right") #+
+  #geom_smooth(method = lm)
+
+
+dev.off()
+
+Animal.model <- lm(prop.consump ~ Total_animals, data = Experiment_1_Data_wide)
+summary(Animal.model)
+
+#this figure is really wack, so it seems the proportion isn't the best way to visualize this data - So let's try to look at this with Macro on one axis and Sarg on the other axis - so a regression + a heat map of total animals counted
+
+
+#Heat Map
+
+Experiment_2_Data_wide_heat <- Experiment_2_Data_wide %>% 
+  mutate(consumption_M = Macrocystis/Time) %>% 
+  mutate(consumption_S = Sargassum/Time) # we have to adjust for time again
+
+library(RColorBrewer)
+
+pdf(file = "AnimalvMvS.pdf", width = 6, height = 4, useDingbats=F)
+
+ggplot(Experiment_2_Data_wide_heat, aes(x =consumption_S, y = consumption_M, 
+                                   z = Total_animals)) + 
+  geom_tile() +
+  stat_summary_2d() +
+  scale_fill_distiller(name = "Total animals counted", palette = "PRGn") +
+  geom_point(shape = 1, col = 'white') +
+ theme(axis.title.x = element_text(face="bold",
+                                                 size=18),
+               axis.text.x  = element_text(size=14)) + 
+  xlab("Sargassum (g/day)") +
+  #theme(axis.title.y = element_blank()) + 
+  ylab("Macrocystis (g/day)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                  size=18, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=14)) +
+   theme(axis.text.y  = element_text(size=14),
+        axis.text.x = element_text(size=14)) +
+  theme(legend.position="right") 
+
+
+dev.off()
+
+
+```
+
+
+```{r Spe. Dis.}
+
+#now let's see what species make up this habitat - i.e. what are the grazers that could be eating our plates
+
+#we need to take the observations and turn them into long format
+
+Experiment_2_Data_long <- gather(data = Experiment_2_Data, 
+                                 key = "Species.sighted", 
+                            value = "Abundance.sighted", ... 
+                                 =  c(X0.5m_herm,
+                                      X0.5m_teg,
+                                      X0.5m_ab,
+                                      X0.5m_ur,
+                                      X0.5m_pac,
+                                      X0.5m_chi,
+                                      X0.5m_lim), factor_key = TRUE)
+
+levels(Experiment_2_Data_long$Species.sighted)
+levels(Experiment_2_Data_long$Species.sighted) <- c("Hermit", "Tegula", "Abalone", "Urchin", "Pachygrapsus", "Chiton", "Limpet") 
+
+
+pdf(file = "Exp2_box_animalspec_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box_2 <- ggplot(data=Experiment_2_Data_long,
+                      aes(y=Abundance.sighted, x=trt, 
+                          fill = Species.sighted)) +
+  geom_boxplot() 
+
+Plot_Box_2 + 
+  theme(axis.title.x = element_text(face="bold", size=16),
+               axis.text.x  = element_text(size=14, angle = 45, hjust = 1)) + 
+  xlab("Habitat") +
+  ylab("# counted") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=16,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=14)) +
+   scale_fill_manual(name = "Animals",
+                     values = c("#56B4E9", #Hermit
+                                "#999999", #Tegula
+                                "#000000", #Abalone
+                                "#009E73", #Urchin
+                                "#0072B2", #Pachy
+                                "#D55E00", #Chiton
+                                "#CC79A7")) + #Limpet
+  theme(legend.position="none")
+
+dev.off()
+
+```
+
+
+## Elevation
+
+We can look at how relative elevation effects consumption and varies with habitat. We will use the auto-level column to compare relative elevation between blocks. We can NOT get absolute elevation from this data.
+
+
+
+```{r Data}
+
+Elevation_Data <- read.csv("./Data/ElevationSurveySNI2020.csv") 
+
+
+```
+
+###Exp.1
+
+```{r Cons v Elevation}
+
+# We will first combine dataframes so we can look at elevation and consumption
+
+Experiment_1_Data_wide #use this dataframe from above
+str(Experiment_1_Data_wide) #block is a factor
+
+Elevation_Data_filter <- Elevation_Data %>% 
+  select(experiment, trt, block, auto_level.m.) %>% 
+  filter(experiment == "1A" | experiment == "1B")
+str(Elevation_Data_filter) #block is an integer
+
+Elevation_Data_filter$block <- factor(Elevation_Data_filter$block, levels = c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"))
+
+
+Elevation_Data_Exp1 <- 
+  left_join(Experiment_1_Data_wide, Elevation_Data_filter, 
+            by = c("block")) #join datasets by block
+
+#Heat Map
+
+Elevation_Data_Exp1_heat <- Elevation_Data_Exp1 %>% 
+  mutate(consumption_M = Macrocystis/Time) %>% 
+  mutate(consumption_S = Sargassum/Time) # we have to adjust for time again
+
+library(RColorBrewer)
+
+pdf(file = "ElevationvMvS_Exp1.pdf", width = 6, height = 4, useDingbats=F)
+
+ggplot(Elevation_Data_Exp1_heat, aes(x =consumption_S, y = consumption_M, 
+                                   z = auto_level.m.)) + 
+  geom_tile() +
+  stat_summary_2d() +
+  scale_fill_distiller(name = "Relative elevation (m)", palette = "PRGn") +
+  geom_point(shape = 1, col = 'white') +
+ theme(axis.title.x = element_text(face="bold",
+                                                 size=18),
+               axis.text.x  = element_text(size=14)) + 
+  xlab("Sargassum (g/day)") +
+  #theme(axis.title.y = element_blank()) + 
+  ylab("Macrocystis (g/day)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                  size=18, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=14)) +
+   theme(axis.text.y  = element_text(size=14),
+        axis.text.x = element_text(size=14)) +
+  theme(legend.position="right") 
+
+
+dev.off()
+
+
+```
+
+```{r Animals v Elevation}
+
+pdf(file = "Exp1_Animal_v_elevation_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_ele <- ggplot(data=Elevation_Data_Exp1_heat,
+                 aes(x=Total_animals, y=auto_level.m.)) +
+  geom_point(size=2) 
+
+Plot_ele + theme(axis.title.x = element_text(face="bold", size=12),
+               axis.text.x  = element_text(size=10)) +
+  ylab("Relative elevation (m)") +
+ xlab("Total animals counted") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=12, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=10)) +
+  theme(legend.position="right") +
+  geom_smooth(method = lm)
+
+
+dev.off()
+
+Animal.model_2 <- lm(auto_level.m. ~ Total_animals, data = Elevation_Data_Exp1_heat)
+summary(Animal.model_2)
+
+
+
+```
+
+###Exp.2
+
+```{r Cons v Elevation}
+
+# We will first combine dataframes so we can look at elevation and consumption
+
+Experiment_2_Data_wide #use this dataframe from above
+str(Experiment_2_Data_wide) #block is a factor
+
+Elevation_Data_filter_2 <- Elevation_Data %>% 
+  select(experiment, trt, block_let, auto_level.m.) %>% 
+  filter(experiment == "2A" | experiment == "2B")
+str(Elevation_Data_filter_2) #block is an integer
+
+Elevation_Data_Exp2 <- 
+  left_join(Experiment_2_Data_wide, Elevation_Data_filter_2, 
+            by = c("block" = "block_let")) #join datasets by block
+
+#Heat Map
+
+Elevation_Data_Exp2_heat <- Elevation_Data_Exp2 %>% 
+  mutate(consumption_M = Macrocystis/Time) %>% 
+  mutate(consumption_S = Sargassum/Time) # we have to adjust for time again
+
+library(RColorBrewer)
+
+pdf(file = "ElevationvMvS_Exp2.pdf", width = 6, height = 4, useDingbats=F)
+
+ggplot(Elevation_Data_Exp2_heat, aes(x =consumption_S, y = consumption_M, 
+                                   z = auto_level.m.)) + 
+  geom_tile() +
+  stat_summary_2d() +
+  scale_fill_distiller(name = "Relative elevation (m)", palette = "PRGn") +
+  geom_point(shape = 1, col = 'white') +
+ theme(axis.title.x = element_text(face="bold",
+                                                 size=18),
+               axis.text.x  = element_text(size=14)) + 
+  xlab("Sargassum (g/day)") +
+  #theme(axis.title.y = element_blank()) + 
+  ylab("Macrocystis (g/day)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                  size=18, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=14)) +
+   theme(axis.text.y  = element_text(size=14),
+        axis.text.x = element_text(size=14)) +
+  theme(legend.position="right") 
+
+
+dev.off()
+
+
+```
+
+```{r Animals v Elevation}
+
+pdf(file = "Exp2_Animal_v_elevation_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_ele <- ggplot(data=Elevation_Data_Exp2_heat,
+                 aes(x=Total_animals, y=auto_level.m.,
+                     colour = trt.x)) +
+  scale_colour_manual(name = "Habitat",
+                      values=c("#009E73", "#000000", "#56B4E9", "#999999")) +
+  geom_point(size=2) 
+
+
+Plot_ele + theme(axis.title.x = element_text(face="bold", size=12),
+               axis.text.x  = element_text(size=10)) +
+  ylab("Relative elevation (m)") +
+ xlab("Total animals counted") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=12, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=10)) +
+  theme(legend.position="right") +
+  geom_smooth(method = lm)
+
+
+dev.off()
+
+qqnorm(Elevation_Data_Exp2_heat$auto_level.m.)
+shapiro.test(Elevation_Data_Exp2_heat$auto_level.m.) #non-normal 
+hist(Elevation_Data_Exp2_heat$auto_level.m.)
+leveneTest(auto_level.m. ~ trt.x, data = Elevation_Data_Exp2_heat) #unequal
+
+#Look at density plots to decide which models to test
+ggplot(data=Elevation_Data_Exp2_heat, aes(x=auto_level.m.)) +
+  #geom_histogram() +
+  geom_density() +
+  facet_grid( ~ trt.x) 
+
+Exp2_model_ele <- lm(auto_level.m. ~ trt.x * Total_animals,
+                       #+ (1 | block),
+                data = Elevation_Data_Exp2_heat)
+
+car::Anova(Exp2_model_ele)
+
+post.hoc.Exp2_ele <-glht(Exp2_model_ele, linfct = mcp(trt.x = "Tukey"))
+cld(post.hoc.Exp2_ele)
+
+
+```
+
+```{r Habitat}
+
+#Lets look out the average elevation per habitat
+
+pdf(file = "Elevation_v_habitat_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box_hab <- ggplot(data=Elevation_Data_Exp2_heat,
+                      aes(y=auto_level.m., x=trt.x, 
+                          fill = trt.x)) +
+  geom_boxplot() 
+
+Plot_Box_hab + 
+  theme(axis.title.x = element_text(face="bold", size=16),
+               axis.text.x  = element_text(size=14, angle = 45, hjust = 1)) + 
+  xlab("Habitat") +
+  ylab("Relative elevation (m)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=16,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=14)) +
+   scale_fill_manual(name = "Habitat",
+                     values = c("#009E73",
+                                "#000000",
+                                "#56B4E9", 
+                                "#999999")) + 
+  theme(legend.position="none")
+
+dev.off()
+
+
+
+```
+
+##Compare
+
+We're going to compare elevation across experients in order to compare 'abalone' habitats
+
+```{r Ele}
+
+Elevation_Data_filter <- Elevation_Data %>% 
+  filter(trt != "NA")
+
+levels(Elevation_Data_filter$trt)
+levels(Elevation_Data_filter$trt) <- c("Abalone.exp2", "Abalone.exp1", "Ab/Urch", "Hermit", "Teg/Hermit") 
+Elevation_Data_filter$trt <- factor(Elevation_Data_filter$trt, levels = c("Ab/Urch", "Abalone.exp1", "Abalone.exp2","Hermit", "Teg/Hermit"))
+
+pdf(file = "Elevation_v_habitat_compare_Jan2020SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box_hab <- ggplot(data=Elevation_Data_filter,
+                      aes(y=auto_level.m., x=trt, 
+                          fill = trt)) +
+  geom_boxplot() 
+
+Plot_Box_hab + 
+  theme(axis.title.x = element_text(face="bold", size=16),
+               axis.text.x  = element_text(size=14, angle = 45, hjust = 1)) + 
+  xlab("Habitat") +
+  ylab("Relative elevation (m)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=16,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=14)) +
+   scale_fill_manual(name = "Habitat",
+                     values = c("#009E73",
+                                "#D55E00",
+                                "#000000",
+                                "#56B4E9", 
+                                "#999999")) + 
+  theme(legend.position="none")
+
+dev.off()
+
+
+
+
+
+
+```
+
+#Feb 2019
+
+Consummption experiment at SNI in Feb 2019
+
+```{r data}
+
+SNI_Feb_Data <- read.csv("./Data/SNIFeb2019Cosign.csv") 
+
+```
+
+```{r Plot}
+
+#We decided that pools and crevices are the same, so we're going to relabel them
+
+levels(SNI_Feb_Data$habitat)
+levels(SNI_Feb_Data$habitat) <- c("Crevice/Pool", "Emergent", "Crevice/Pool") 
+
+pdf(file = "Box_Feb2019SanNic.pdf", width = 6, height = 4, useDingbats=F)
+
+Plot_Box <- ggplot(data=SNI_Feb_Data,
+                      aes(y=adjustedweight, x=bench, fill = habitat)) +
+  geom_boxplot() 
+
+Plot_Box + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Bench") +
+  ylab("Consumption (g/day)") + #experiments were only out 1 day
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(name = "Substrate",
+                    values = c("#999999", "#009E73")) +
+  theme(legend.justification=c(.5,.5), legend.position=c(.88,.88)) #+
+  #scale_y_continuous(expand = expand_scale(mult = c(0, 0)),
+                    # breaks = pretty(c(0,25), n = 5), 
+                     #limits = c(0,25))
+
+dev.off()
+
+
+```
+
+```{r Model}
+
+#normal
+qqnorm(SNI_Feb_Data$adjustedweight)
+shapiro.test(SNI_Feb_Data$adjustedweight) #non-normal 
+hist(SNI_Feb_Data$adjustedweight)
+leveneTest(adjustedweight ~ bench, data = SNI_Feb_Data) #unequal
+leveneTest(adjustedweight ~ habitat, data = SNI_Feb_Data) #equal
+
+#Look at density plots to decide which models to test
+ggplot(data=SNI_Feb_Data, aes(x=adjustedweight)) +
+  #geom_histogram() +
+  geom_density() +
+  facet_grid(habitat ~ bench) #very not-normal
+
+#proceed with caustion
+
+Feb_model <- glm(adjustedweight ~ habitat * bench,
+                      family = gaussian,
+                data = SNI_Feb_Data)
+
+car::Anova(Feb_model)
+
+
+
+```
+

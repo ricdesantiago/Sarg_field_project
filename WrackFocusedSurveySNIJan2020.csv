@@ -1,0 +1,43 @@
+﻿date,site,experiment,transect_num,habitat,wrack_sp,wrack_num,dist_on_trans,wrack_length,teg,herm,ab,notes
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,1,NA,5.61,0,2,7,located in ab ridge
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,2,NA,4.1,0,0,0,transect length 50m
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,3,NA,1.86,0,0,2,observer-JL
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,4,NA,0.29,3,0,1,recorder AW
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,5,NA,3.27,4,0,1,ab counts estimated to avoid ab disturbance 
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,6,NA,0.56,0,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,7,NA,0.46,0,3,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,8,NA,2,3,0,1,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,9,NA,4.5,3,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,10,NA,1.32,0,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,11,NA,2.16,4,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,12,NA,0.82,0,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,13,NA,7,0,0,1,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,14,NA,4.3,0,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,15,NA,8.2,7,35,2,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,16,NA,4.99,15,1,1,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,17,NA,0.9,5,2,2,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,18,NA,3,9,11,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,19,NA,0.46,0,0,0,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,20,NA,0.13,1,0,1,
+1/12/20,Cosign,wrack_focused,1,Ab,Macrocystis,21,NA,3,50,31,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,1,16,0.85,0,0,0,observer-JW
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,2,16,0.36,0,0,0,recorder-SF
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,3,16.45,0.19,2,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,4,20.9,0.83,1,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,5,23.5,0.14,0,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,6,27.8,0.54,3,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,7,28.9,0.77,10,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,8,30.6,1.04,23,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,9,40.2,0.34,0,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,10,42.5,2.9,5,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,11,49.8,1.2,1,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,12,1.2,0.09,0,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,13,14.2,0.1,0,2,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,14,14.5,0.8,0,0,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,15,20.5,0.57,13,10,1,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,16,24.5,0.54,0,6,2,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,17,25.2,2.2,2,2,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,18,29.6,1.14,0,1,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,19,37.6,8.13,38,135,0,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,20,NA,1.25,4,0,2,
+1/12/20,Cosign,wrack_focused,2,TegHerm,Macrocystis,21,38.4,0.7,18,0,0,

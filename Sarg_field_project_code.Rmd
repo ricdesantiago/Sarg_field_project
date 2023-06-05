@@ -1,0 +1,225 @@
+---
+title: "Sarg_field_project_code"
+author: "Ric DeSantiago"
+date: "2023-04-28"
+output: html_document
+---
+
+# Libraries
+
+```{r libraries}
+library(knitr)
+library(jtools)
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(ggfortify)
+library(lme4)
+library(car)
+library(nlme)
+library(ggpubr)
+library(multcompView)
+library(boot)
+library(Hotelling)
+library(mvnTest)
+library(vegan)
+library(factoextra)
+library(FactoMineR)
+library(agricolae)
+library(glmm)
+library(HH)
+library(ggpubr)
+library(rstatix)
+library(psych)
+library(MASS)
+
+#install.packages("lmerTest")
+library(fitdistrplus)
+library(lmerTest)
+
+#install.packages("pander")
+library(pander)
+library(magrittr)
+
+#PCA
+library(car)
+
+
+setwd("~/Documents/GitHub/Sarg_field_project")
+#hi
+```
+
+# Load Field experiments
+
+```{r}
+
+sargdata<-read.csv("SNICosignJan2020.csv", header = TRUE)
+view(sargdata)
+
+
+#we'll clean up the file for just experiment 1 and add 2 new columns that we'll use later
+
+Experiment_1_Data <- sargdata %>% 
+  filter(experiment == "1A" | experiment == "1B") %>% 
+  filter(treatment != "ABX") %>% #remove abalone exclusion
+  filter(!is.na(Wf)) %>% #remove NAs from Wf
+  mutate(consumption = Wf/Time) %>% #I made a new column called time in excel prior to calling the file into R, this gives us g/day
+  mutate(Total_animals = X0.5m_herm + X0.5m_teg + X0.5m_ab + 
+           X0.5m_ur + X0.5m_pac + X0.5m_chi + X0.5m_lim) %>% 
+  mutate(On_plate = herm_on_plate + teg_on_plate + ab_on_plate)
+
+view(Experiment_1_Data)
+
+
+# First we'll visualize the data using a bar plot - Do grazers prefer sargassum or macro?
+
+levels(Experiment_1_Data$algae_spp.)
+levels(Experiment_1_Data$algae_spp.) <- c("Macrocystis", "Sargassum") 
+
+#Barplot
+
+meanconsumption_data <- Experiment_1_Data %>% 
+  group_by(algae_spp.) %>% 
+  summarize(mean_consumption = mean(consumption))
+
+
+Plot_Bar <- ggplot(data=meanconsumption_data,
+                      aes(y=mean_consumption, 
+                          x=algae_spp., 
+                          fill = algae_spp.)) +
+  geom_bar(stat = "identity", colour = "black", 
+           position = position_dodge(width = 0.9))
+
+Plot_Bar 
+
+#+ theme(axis.title.x = element_text(face="bold",
+                                                 size=22),
+                           axis.text.x  = element_text(size=20)) + 
+  xlab("Algae species") +
+  theme(axis.title.y = element_blank()) + 
+  ylab("Consumption (g/day)") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                    size=22, 
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  geom_errorbar(aes(ymin=mean_consumption - SE, 
+                    ymax=mean_consumption + SE), width = 0.05,
+                position=position_dodge(width = 0.9)) +
+  scale_fill_manual(name = "Algae species",
+                    values = c("#CC9966", "#FF9999")) +
+  theme(legend.position="none")
+
+dev.off()
+
+#boxplot
+
+Plot_Box <- ggplot(data=Experiment_1_Data,
+                      aes(y=consumption, x=algae_spp., fill = algae_spp.)) +
+  geom_boxplot() 
+
+Plot_Box + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20)) + 
+  xlab("Algae Species") +
+  ylab("Consumption (g/day)") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+   scale_fill_manual(name = "Algae species",
+                    values = c("#CC9966", "#FF9999")) +
+  theme(legend.position="none")
+
+
+
+
+
+#we're going to see if the total number of animals explains consumption
+
+#first, we'll add a new column which will be the proportion of M:S consumed
+
+#we have to go from the long format to the wide format
+
+Experiment_1_Data_reduced <- na.omit(Experiment_1_Data[, -c(1:2, 4:6, 8:27, 31)])
+  
+Experiment_1_Data_wide <- spread(Experiment_1_Data_reduced, algae_spp., consumption)
+Experiment_1_Data_wide
+
+Experiment_1_Data_wide <- Experiment_1_Data_wide %>% 
+  mutate(prop.consump = M/S)
+
+
+Plot_prop <- ggplot(data=Experiment_1_Data_wide,
+                 aes(x=Total_animals, y=prop.consump)) +
+  geom_point(size=2) 
+
+Plot_prop + theme(axis.title.x = element_text(face="bold", size=12),
+               axis.text.x  = element_text(size=10)) +
+  ylab("Macrocystis to Sargassum consumption") +
+ xlab("Total animals counted") +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", 
+                                   size=12, 
+                                   vjust = 1),
+        axis.text.y  = element_text(size=10)) +
+  theme(legend.position="right") +
+  geom_smooth(method = lm)
+
+
+
+
+Animal.model <- lm(prop.consump ~ Total_animals, data = Experiment_1_Data_wide)
+summary(Animal.model)
+
+
+
+
+
+#now let's see what species make up this habitat - i.e. what are the grazers that could be eating our plates
+
+#we need to take the observations and turn them into long format
+
+Experiment_1_Data_long <- gather(data = Experiment_1_Data, 
+                                 key = "Species.sighted", 
+                            value = "Abundance.sighted",  
+                                  c(X0.5m_herm,
+                                      X0.5m_teg,
+                                      X0.5m_ab,
+                                      X0.5m_ur,
+                                      X0.5m_pac,
+                                      X0.5m_chi,
+                                      X0.5m_lim), factor_key = TRUE)
+
+levels(Experiment_1_Data_long$Species.sighted)
+levels(Experiment_1_Data_long$Species.sighted) <- c("Hermit", "Tegula", "Abalone", "Urchin", "Pachygrapsus", "Chiton", "Limpet") 
+
+
+Plot_Box_1 <- ggplot(data=Experiment_1_Data_long,
+                      aes(y=Abundance.sighted, x=Species.sighted, 
+                          fill = Species.sighted)) +
+  geom_boxplot() 
+
+Plot_Box_1 + 
+  theme(axis.title.x = element_text(face="bold", size=22),
+               axis.text.x  = element_text(size=20, angle = 45, hjust = 1)) + 
+  xlab("Animal") +
+  ylab("# counted") +
+  theme(axis.title.y = element_blank()) +
+  theme(axis.title.y = element_text(angle=90, 
+                                    face="bold", size=22,
+                                    vjust=1.5),
+        axis.text.y  = element_text(size=20)) +
+  scale_fill_manual(name = "Animals",
+                     values = c("#56B4E9", #Hermit
+                                "#999999", #Tegula
+                                "#000000", #Abalone
+                                "#009E73", #Urchin
+                                "#0072B2", #Pachy
+                                "#D55E00", #Chiton
+                                "#CC79A7")) +
+  theme(legend.position="none")
+
+
+```

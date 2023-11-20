@@ -116,7 +116,6 @@ These were the wrack focused surveys, mainly taken by Jan, during the January tr
 
 ```{r Data}
 
- setwd("~/Desktop/R Data/SNI JAN 2020 Data")
 Wrack_Survey_Data <- read.csv("WrackFocusedSurveySNIJan2020.csv")
 
 ```
@@ -408,7 +407,7 @@ dev.off()
 
 ```{r Data}
 
-Abalone_Survey_Data <- read.csv("./Data/AbFocusedWrackSurveySNIJan2020.csv")
+Abalone_Survey_Data <- read.csv("AbFocusedWrackSurveySNIJan2020.csv")
 
 ```
 
@@ -423,8 +422,7 @@ Abalone_Survey_Data_reduced <- na.omit(Abalone_Survey_Data[, -c(1:5, 7)])
 #Change to long format
 
 Abalone_Survey_Data_long <- gather(data = Abalone_Survey_Data_reduced, 
-                                 key = "Wrack.Use", value = "Abundance", ... 
-                                 =  c(on_wrack, off_wrack), factor_key = TRUE)
+                                 key = "Wrack.Use", value = "Abundance", factor_key = TRUE)
 
 #rename habitats
 levels(Abalone_Survey_Data_long$habitat)
@@ -507,7 +505,7 @@ These transects were perpendicular to the water line. Therefore, they crossed ma
 
 ```{r Data}
 
-Grazer_Survey_Data <- read.csv("./Data/GrzrOnOffSurveySNIJan2020.csv") 
+Grazer_Survey_Data <- read.csv("GrzrOnOffSurveySNIJan2020.csv") 
 # note this file has been edited and re-uploaded to Google drive, use the file that is most up to date
 #edits were made to do repetitive data
 
